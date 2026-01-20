@@ -7,7 +7,6 @@ import re
 import torch
 import streamlit as st
 
-from typing import List
 from PyPDF2 import PdfReader
 from sentence_transformers import SentenceTransformer, CrossEncoder
 
@@ -126,7 +125,23 @@ class PDFAnalyzer:
             if len(output) == 6:
                 break
 
-        return "\n".join(f"- {o}" for o in output)
+        # Detect section header keywords dynamically
+        header = ""
+        if any("experiment" in o.lower() for o in output):
+            header = "EXPERIMENTS:\n"
+        elif any("course outcome" in o.lower() for o in output):
+            header = "COURSE OUTCOMES:\n"
+        elif any("objective" in o.lower() for o in output):
+            header = "COURSE OBJECTIVES:\n"
+        else:
+            header = "ANSWER:\n"
+
+        # Format syllabus-style numbered text
+        syllabus_text = header
+        for i, o in enumerate(output, start=1):
+            syllabus_text += f"{i}. {o}\n"
+
+        return syllabus_text.strip()
 
 # =========================
 # STREAMLIT UI
