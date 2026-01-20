@@ -43,9 +43,10 @@ def split_sentences(text):
 
 def build_index(emb):
     dim = emb.shape[1]
-    idx = faiss.IndexHNSWFlat(dim, HNSW_M)
-    idx.hnsw.efConstruction = HNSW_EF_CONSTRUCTION
-    return faiss.IndexIDMap2(idx)
+    hnsw = faiss.IndexHNSWFlat(dim, HNSW_M)
+    hnsw.hnsw.efConstruction = HNSW_EF_CONSTRUCTION
+    hnsw.hnsw.efSearch = HNSW_EF_SEARCH   # ✅ set here
+    return faiss.IndexIDMap2(hnsw)
 
 # =========================
 # ANALYZER
@@ -54,7 +55,7 @@ class PDFAnalyzer:
     def __init__(self):
         self.device = "cuda" if USE_GPU and torch.cuda.is_available() else "cpu"
         self.model = SentenceTransformer(MODEL_NAME, device=self.device)
-        self.reranker = CrossEncoder(RERANK_MODEL)
+        self.reranker = CrossEncoder(RERANK_MODEL, device=self.device)
         ensure_dir(STORE_DIR)
 
     def index_pdf(self, pdf):
@@ -107,7 +108,6 @@ class PDFAnalyzer:
         index = meta["index"]
         sents = meta["sentences"]
 
-        index.index.hnsw.efSearch = HNSW_EF_SEARCH
         q_emb = self.model.encode([question], normalize_embeddings=True).astype("float32")
 
         _, ids = index.search(q_emb, min(max_facts * 3, index.ntotal))
