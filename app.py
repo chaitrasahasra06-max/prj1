@@ -6,7 +6,6 @@ import faiss
 import re
 import torch
 import streamlit as st
-import nltk
 
 from typing import List
 from PyPDF2 import PdfReader
@@ -39,10 +38,9 @@ def read_pdf_text(pdf):
     reader = PdfReader(pdf)
     return "\n".join(page.extract_text() or "" for page in reader.pages)
 
-# Use nltk for faster sentence splitting
-nltk.download("punkt", quiet=True)
+# Regex-based sentence splitting (no NLTK needed)
 def split_sentences(text):
-    return nltk.sent_tokenize(text)
+    return [s.strip() for s in re.split(r'(?<=[.!?])\s+', text) if s.strip()]
 
 def build_index(emb):
     dim = emb.shape[1]
